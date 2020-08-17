@@ -10,13 +10,27 @@ namespace Utils
 {
     internal class Program
     {
+        public static string beginTransaction = new string("BEGIN TRY\n" +
+                     "  BEGIN TRANSACTION\n" +
+                     "      DELETE profilesection.countries\n" +
+                     "      DECLARE @username as nvarchar(max);\n" +
+                     "      SET @username = (SELECT USER_NAME());\n");
+
+        public static string endTransaction = new string("      SET NOEXEC OFF\n" +
+                     "  COMMIT\n" +
+                     "END TRY\n" +
+                     "BEGIN CATCH\n" +
+                     "  SELECT ERROR_MESSAGE(), ERROR_LINE()\n" +
+                     "    ROLLBACK\n" +
+                     "END CATCH");
+
         public static string sqlCountryCommand = new string("INSERT profilesection.Countries(name, country_short_code, postal_code_validation_rule, " +
-            "needs_state, prefix_regex, created_at, created_by, updated_at, updated_by) VALUES(N'{0}', N'{1}', {2}, {3},  N'{\"Regex\":\".* \"}', " +
+            "needs_state, prefix_regex, created_at, created_by, updated_at, updated_by) VALUES (N'{0}', N'{1}', {2}, {3}, {4}, " +
             "GETDATE(), @username, GETDATE(), @username)");
 
         public static string sqlStateCommand = new string("INSERT INTO profilesection.country_states (country_id, state, state_code_1, state_code_2, " +
             "state_code_3, state_code_4, state_code_5, prefix, created_at, created_by, updated_at, updated_by) VALUES ({0}, {1}, {2}, null, null, null" +
-            ", null, N[3}, GETDATE(), @username, GETDATE(), @username)");
+            ", null, N{3}, GETDATE(), @username, GETDATE(), @username)");
 
         public static SortedList<string, string> ret = new SortedList<string, string>();
 
@@ -32,8 +46,8 @@ namespace Utils
 
         private static void Main(string[] args)
         {
-            CreateStatesScript();
-            // CreateCountryScript();
+            //CreateStatesScript();
+            CreateCountryScript();
         }
 
         public static void CreateCountryScript()
@@ -45,20 +59,32 @@ namespace Utils
 
         public static void SqlCountryScript()
         {
+            string prefix = "'N\"{\"Regex\":\".* \"}'";
             foreach (CountryStructure country in countries)
             {
-                country.PostalCodeValidationRule = "N'{\"Regex\":\"" + country.PostalCodeValidationRule + "\"}'";
+                if (country.CountryShortCode == "US" || country.CountryShortCode == "PR" || country.CountryShortCode == "IN")
+                    country.PrefixRegex = "N'{\"Regex\":\"^\\d{3}\"}'";
+                if (country.CountryShortCode == "CH" || country.CountryShortCode == "JP" || country.CountryShortCode == "MX")
+                    country.PrefixRegex = "N'{\"Regex\":\"^\\d{2}\"}'";
+                if (country.CountryShortCode == "CA")
+                    country.PrefixRegex = "N'{\"Regex\":\"^(?:[ABCEGHJ-NPRSTVXY])\"}'";
+                else
+                    country.PrefixRegex = prefix;
+                country.PostalCodeValidationRule = "N'{\"Regex\":\"" + country.PostalCodeValidationRule + "\"}' ";
                 country.PostalCodeValidationRule = country.PostalCodeValidationRule.Replace("\\", "\\\\");
-                sqlcommands.Add(String.Format(sqlCountryCommand, country.Name, country.CountryShortCode, country.PostalCodeValidationRule, country.NeedsState));
+
+                sqlcommands.Add(String.Format(sqlCountryCommand, country.Name, country.CountryShortCode, country.PostalCodeValidationRule, country.NeedsState, country.PrefixRegex));
             }
 
             //write to file
-            TextWriter tw = new StreamWriter("SQLScript.txt");
+            TextWriter tw = new StreamWriter("CountrySQLScript.txt");
+            tw.Write(beginTransaction);
             foreach (string s in sqlcommands)
             {
                 tw.Write(s);
                 tw.Write("\n");
             }
+            tw.Write(endTransaction);
             tw.Close();
         }
 
@@ -85,9 +111,9 @@ namespace Utils
                             CountryShortCode = data_table.Rows[i][2].ToString(),
                         };
                         if (data_table.Rows[i][5].ToString().Contains("YES"))
-                            countryToInsert.NeedsState = true;
+                            countryToInsert.NeedsState = "1";
                         else
-                            countryToInsert.NeedsState = false;
+                            countryToInsert.NeedsState = "0";
                         countries.Add(countryToInsert);
                     }
 
@@ -120,12 +146,13 @@ namespace Utils
         public static void CreateStatesScript()
         {
             ReadInfo();
+            SqlStatScript();
         }
 
         public static void ReadInfo()
         {
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-            using (var stream = File.Open(@"Resources/CountriesforParcel.xlsx", FileMode.Open, FileAccess.Read))
+            using (var stream = File.Open(@"Resources/CountriesforParcelFedex.xlsx", FileMode.Open, FileAccess.Read))
             {
                 // Auto-detect format, supports:
                 //  - Binary Excel files (2.0-2003 format; *.xls)
@@ -193,11 +220,13 @@ namespace Utils
 
             //write to file
             TextWriter tw = new StreamWriter("SQLScript.txt");
+            tw.Write(beginTransaction);
             foreach (string s in sqlcommands)
             {
                 tw.Write(s);
                 tw.Write("\n");
             }
+            tw.Write(endTransaction);
             tw.Close();
         }
     }

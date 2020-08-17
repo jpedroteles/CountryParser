@@ -10,7 +10,7 @@ namespace Utils.Model
         public string Description { get; set; }
         public string CountryShortCode { get; set; }
         public string PostalCodeValidationRule { get; set; }
-        public Boolean NeedsState { get; set; }
+        public string NeedsState { get; set; }
         public string PrefixRegex { get; set; }
     }
 }
