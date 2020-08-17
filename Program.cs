@@ -46,8 +46,8 @@ namespace Utils
 
         private static void Main(string[] args)
         {
-            //CreateStatesScript();
-            CreateCountryScript();
+            CreateStatesScript();
+            //CreateCountryScript();
         }
 
         public static void CreateCountryScript()
@@ -219,7 +219,7 @@ namespace Utils
             }
 
             //write to file
-            TextWriter tw = new StreamWriter("SQLScript.txt");
+            TextWriter tw = new StreamWriter("StateSQLScript.txt");
             tw.Write(beginTransaction);
             foreach (string s in sqlcommands)
             {
