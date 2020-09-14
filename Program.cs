@@ -25,12 +25,12 @@ namespace Utils
                      "END CATCH");
 
         public static string sqlCountryCommand = new string("INSERT profilesection.Countries(name, country_short_code, postal_code_validation_rule, " +
-            "needs_state, prefix_regex, created_at, created_by, updated_at, updated_by) VALUES (N'{0}', N'{1}', {2}, {3}, {4}, " +
+            "needs_state, prefix_regex, created_at, created_by, updated_at, updated_by) VALUES (N'{0}', N'{1}', N'{2}', N'{3}', N'{4}', " +
             "GETDATE(), @username, GETDATE(), @username)");
 
         public static string sqlStateCommand = new string("INSERT INTO profilesection.country_states (country_id, state, state_code_1, state_code_2, " +
-            "state_code_3, state_code_4, state_code_5, prefix, created_at, created_by, updated_at, updated_by) VALUES ({0}, {1}, {2}, null, null, null" +
-            ", null, N{3}, GETDATE(), @username, GETDATE(), @username)");
+            "state_code_3, state_code_4, state_code_5, prefix, created_at, created_by, updated_at, updated_by) VALUES (N'{0}', N'{1}', N'{2}', null, null, null" +
+            ", null, N'{3}', GETDATE(), @username, GETDATE(), @username)");
 
         public static SortedList<string, string> ret = new SortedList<string, string>();
 
@@ -47,7 +47,7 @@ namespace Utils
         private static void Main(string[] args)
         {
             CreateStatesScript();
-            //CreateCountryScript();
+            CreateCountryScript();
         }
 
         public static void CreateCountryScript()
@@ -170,52 +170,54 @@ namespace Utils
                         CountryState countryStateToInsert = new CountryState
                         {
                             Country = data_table.Rows[i][0].ToString(),
-                            StateName = data_table.Rows[i][1].ToString(),
+                            Prefix = data_table.Rows[i][1].ToString(),
                             StateCode = data_table.Rows[i][2].ToString(),
-                            Prefix = data_table.Rows[i][3].ToString(),
+                            StateName = data_table.Rows[i][3].ToString(),
                         };
                         countriesState.Add(countryStateToInsert);
                     }
 
-                    TextWriter tw = new StreamWriter("CountryStateInfo.txt");
-                    foreach (CountryState s in countriesState)
-                    {
-                        tw.Write(s.Country + " " + s.StateName + " " + s.StateCode + " " + s.Prefix);
-                        tw.Write("\n");
-                    }
-                    tw.Close();
+                    /* TextWriter tw = new StreamWriter("CountryStateInfo.txt");
+                     foreach (CountryState s in countriesState)
+                     {
+                         tw.Write(s.Country + " " + s.StateName + " " + s.StateCode + " " + s.Prefix);
+                         tw.Write("\n");
+                     }
+                     tw.Close();*/
                 }
             }
         }
 
         public static void SqlStatScript()
         {
-            string USID = "BEF2708C-F1D1-41D9-A95D-8F5794750462";
-            string PRID = "15FA019A-1F72-4104-95F3-32640CB67843";
-            string CNID = "89FC8188-4693-4C39-AFAC-1BEB55C0524E";
-            string MXID = "10F99FE2-35F3-47F1-8E01-2CC641EA912C";
-            string THID = "BE2D24EE-41C3-4677-A211-5420E319217A";
-            string INID = "0581DAAB-383F-42AC-A3E9-800745047593";
-            string JPID = "61263884-EC54-4187-8A33-87755BC8B5FF";
-            string CAID = "DD12EA71-71AA-44AB-A8E4-DCBB58576219";
+            string USID = "'BEF2708C-F1D1-41D9-A95D-8F5794750462'";
+            string PRID = "'15FA019A-1F72-4104-95F3-32640CB67843'";
+            string CNID = "'89FC8188-4693-4C39-AFAC-1BEB55C0524E'";
+            string MXID = "'10F99FE2-35F3-47F1-8E01-2CC641EA912C'";
+            string THID = "'BE2D24EE-41C3-4677-A211-5420E319217A'";
+            string INID = "'0581DAAB-383F-42AC-A3E9-800745047593'";
+            string JPID = "'61263884-EC54-4187-8A33-87755BC8B5FF'";
+            string CAID = "'DD12EA71-71AA-44AB-A8E4-DCBB58576219'";
             foreach (CountryState country in countriesState)
             {
+                if (String.IsNullOrEmpty(country.StateCode))
+                    country.StateCode = "null";
                 if (country.Country == "US")
-                    sqlcommands.Add(String.Format(sqlStateCommand, USID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, USID, country.StateName, country.StateCode, country.Prefix));
                 if (country.Country == "PR")
-                    sqlcommands.Add(String.Format(sqlStateCommand, PRID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, PRID, country.StateName, country.StateCode, country.Prefix));
                 if (country.Country == "CN")
-                    sqlcommands.Add(String.Format(sqlStateCommand, CNID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, CNID, country.StateName, country.StateCode, country.Prefix));
                 if (country.Country == "MX")
-                    sqlcommands.Add(String.Format(sqlStateCommand, MXID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, MXID, country.StateName, country.StateCode, country.Prefix));
                 if (country.Country == "TH")
-                    sqlcommands.Add(String.Format(sqlStateCommand, THID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, THID, country.StateName, country.StateCode, country.Prefix));
                 if (country.Country == "IN")
-                    sqlcommands.Add(String.Format(sqlStateCommand, INID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, INID, country.StateName, country.StateCode, country.Prefix));
                 if (country.Country == "JP")
-                    sqlcommands.Add(String.Format(sqlStateCommand, JPID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, JPID, country.StateName, country.StateCode, country.Prefix));
                 if (country.Country == "CA")
-                    sqlcommands.Add(String.Format(sqlStateCommand, CAID, country.Country, country.StateName, country.StateCode, country.Prefix));
+                    sqlcommands.Add(String.Format(sqlStateCommand, CAID, country.StateName, country.StateCode, country.Prefix));
             }
 
             //write to file
